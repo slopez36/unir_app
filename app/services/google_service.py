@@ -18,12 +18,36 @@ CREDENTIALS_FILE = 'credentials.json'
 
 class GoogleService:
     @staticmethod
+    def _get_abs_path(filename):
+        # Check CWD
+        if os.path.exists(filename):
+            return filename
+        # Check root (3 levels up from this file: app/services/google_service.py)
+        root_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        root_file = os.path.join(root_path, filename)
+        if os.path.exists(root_file):
+            return root_file
+        return filename # Return original if not found (will fail later but expected)
+
+    @staticmethod
     def get_credentials():
         creds = None
-        # Check if token exists in root or app folder (adjust path as needed)
-        # Assuming we run from unir_app2 root, and files are there if copied
-        if os.path.exists(TOKEN_FILE):
-            creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+        
+        # 1. Try Environment Variable for Token
+        token_json = os.environ.get('GOOGLE_TOKEN_JSON')
+        if token_json:
+            import json
+            try:
+                info = json.loads(token_json)
+                creds = Credentials.from_authorized_user_info(info, SCOPES)
+            except Exception as e:
+                print(f"Error loading token from env: {e}")
+
+        # 2. Fallback to File for Token
+        if not creds:
+            token_path = GoogleService._get_abs_path(TOKEN_FILE)
+            if os.path.exists(token_path):
+                creds = Credentials.from_authorized_user_file(token_path, SCOPES)
         
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
@@ -32,12 +56,27 @@ class GoogleService:
                 except Exception:
                     return None
             else:
-                if not os.path.exists(CREDENTIALS_FILE):
-                    return None
-                flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-                creds = flow.run_local_server(port=0)
+                # 3. Try Environment Variable for Client Credentials (client_secret)
+                creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+                if creds_json:
+                    import json
+                    config = json.loads(creds_json)
+                    flow = InstalledAppFlow.from_client_config(config, SCOPES)
+                    creds = flow.run_local_server(port=0)
+                else:
+                    # 4. Fallback to File for Client Credentials
+                    creds_path = GoogleService._get_abs_path(CREDENTIALS_FILE)
+                    if not os.path.exists(creds_path):
+                        return None
+                    flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
+                    creds = flow.run_local_server(port=0)
             
-            with open(TOKEN_FILE, 'w') as token:
+            # Save updated token if using file (skip if using env var to avoid confusion, or print it)
+            # For simplicity, we only write back if file exists or we want to persist it locally.
+            # In a container with Env Vars, we can't easily update the Env Var, so we might lose refresh.
+            # Ideally, one should map a volume for persistence or just use the long-lived refresh token.
+            token_path = GoogleService._get_abs_path(TOKEN_FILE)
+            with open(token_path, 'w') as token:
                 token.write(creds.to_json())
         
         return creds

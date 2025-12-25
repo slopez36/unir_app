@@ -7,12 +7,11 @@ services:
     # Eliminamos ports para que solo sea accesible vía Proxy
     volumes:
       - unir_db_data:/app/instance
-      # Montaje de archivos sensibles desde una carpeta fija en el servidor
-      - /home/unir-app/config/credentials.json:/app/credentials.json
-      - /home/unir-app/config/token.json:/app/token.json
     environment:
       - FLASK_ENV=production
-      - SECRET_KEY=${SECRET_KEY} # Definiremos esto en Portainer
+      - SECRET_KEY=${SECRET_KEY}
+      - GOOGLE_TOKEN_JSON=${GOOGLE_TOKEN_JSON}
+      - GOOGLE_CREDENTIALS_JSON=${GOOGLE_CREDENTIALS_JSON}
     networks:
       - nginx-network
     restart: unless-stopped
