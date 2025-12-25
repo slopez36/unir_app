@@ -20,5 +20,7 @@ class ProductionConfig(Config):
 
 config_by_name = {
     'development': DevelopmentConfig,
-    'production': ProductionConfig
+    'production': ProductionConfig,
+    'dev': DevelopmentConfig,
+    'prod': ProductionConfig
 }
