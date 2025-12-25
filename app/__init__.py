@@ -10,6 +10,10 @@ def create_app(config_name='development'):
 
     db.init_app(app)
 
+    # Trust proxy headers (needed for HTTPS behind Nginx Proxy Manager)
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
     from .routes.main import main_bp
     from .routes.subjects import subjects_bp
     from .routes.resources import resources_bp
