@@ -4,21 +4,22 @@ services:
   unir_app:
     container_name: unir_app_flask
     build: .
-    ports:
-      - "5000:5000"
+    # Eliminamos ports para que solo sea accesible vía Proxy
     volumes:
-      # Persist the database
-      - ./instance:/app/instance
-      # Mount credentials so they can be updated without rebuilding
-      - ./credentials.json:/app/credentials.json
-      - ./token.json:/app/token.json
+      - unir_db_data:/app/instance
+      # Montaje de archivos sensibles desde una carpeta fija en el servidor
+      - /home/unir-app/config/credentials.json:/app/credentials.json
+      - /home/unir-app/config/token.json:/app/token.json
     environment:
       - FLASK_ENV=production
-      # Secret key should ideally be an env var
-      - SECRET_KEY=tu_clave_secreta_produccion
+      - SECRET_KEY=${SECRET_KEY} # Definiremos esto en Portainer
     networks:
       - nginx-network
     restart: unless-stopped
+
+volumes:
+  unir_db_data:
+    # Usar volúmenes nombrados es más limpio en Portainer
 
 networks:
   nginx-network:
