@@ -1,10 +1,11 @@
-from flask import Blueprint, request, redirect, url_for, flash
+from flask import Blueprint, request, redirect, url_for, flash, session
 from app import db
 from app.models import Activity, ActivityFile, Subject, Event
 from app.services.google_service import GoogleService
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
+import tempfile
 
 activities_bp = Blueprint('activities', __name__, url_prefix='/activity')
 
@@ -37,7 +38,9 @@ def delete(activity_id):
     
     # Delete files from Drive
     if activity.files:
-        drive_service = GoogleService.get_drive_service()
+        creds_dict = session.get('credentials')
+        cred_obj = GoogleService.get_credentials(creds_dict)
+        drive_service = GoogleService.get_drive_service(cred_obj)
         if drive_service:
             for f in activity.files:
                 GoogleService.delete_file(drive_service, f.drive_file_id)
@@ -52,7 +55,9 @@ def upload_file(activity_id):
     activity = Activity.query.get_or_404(activity_id)
     files = request.files.getlist('files')
     
-    drive_service = GoogleService.get_drive_service()
+    creds_dict = session.get('credentials')
+    cred_obj = GoogleService.get_credentials(creds_dict)
+    drive_service = GoogleService.get_drive_service(cred_obj)
     if not drive_service:
         flash('No se pudo conectar a Drive.', 'error')
         return redirect(url_for('subjects.detail', subject_id=activity.subject_id))
@@ -62,9 +67,11 @@ def upload_file(activity_id):
     act_folder_id = GoogleService.get_or_create_folder(drive_service, "actividades", parent_id=subject_folder_id)
     
     for file in files:
+
         if file.filename == '': continue
         filename = secure_filename(file.filename)
-        temp_path = os.path.join('/tmp', filename) if os.name != 'nt' else os.path.join(os.environ.get('TEMP', 'C:\\Temp'), filename)
+        temp_dir = tempfile.gettempdir()
+        temp_path = os.path.join(temp_dir, filename)
         file.save(temp_path)
         
         try:
@@ -95,7 +102,9 @@ def create_event(subject_id):
         db.session.add(event)
         
         # Sync to Google Calendar
-        cal_service = GoogleService.get_calendar_service()
+        creds_dict = session.get('credentials')
+        cred_obj = GoogleService.get_credentials(creds_dict)
+        cal_service = GoogleService.get_calendar_service(cred_obj)
         if cal_service:
             subject = Subject.query.get(subject_id)
             g_id = GoogleService.create_event(cal_service, f"[{subject.name}] {title}", start_dt, end_dt, description)

@@ -15,9 +15,21 @@ def create_app(config_name='dev'):
     from .routes.resources import resources_bp
     from .routes.activities import activities_bp
     
+    from app.routes.auth import auth_bp
     app.register_blueprint(main_bp)
     app.register_blueprint(subjects_bp)
     app.register_blueprint(resources_bp)
     app.register_blueprint(activities_bp)
+    app.register_blueprint(auth_bp)
+
+    from flask import session, redirect, url_for, request
+
+    @app.before_request
+    def require_login():
+        allowed_routes = ['auth.login', 'auth.callback', 'static']
+        if request.endpoint and request.endpoint not in allowed_routes and 'user_email' not in session:
+             # Basic check: if it acts like a static asset or public route, skip
+             if not request.endpoint.startswith('static'):
+                 return redirect(url_for('auth.login'))
 
     return app

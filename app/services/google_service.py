@@ -19,72 +19,35 @@ CREDENTIALS_FILE = 'credentials.json'
 class GoogleService:
     @staticmethod
     def _get_abs_path(filename):
-        # Check CWD
-        if os.path.exists(filename):
-            return filename
-        # Check root (3 levels up from this file: app/services/google_service.py)
+        if os.path.exists(filename): return filename
         root_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         root_file = os.path.join(root_path, filename)
-        if os.path.exists(root_file):
-            return root_file
-        return filename # Return original if not found (will fail later but expected)
+        if os.path.exists(root_file): return root_file
+        return filename
 
     @staticmethod
-    def get_credentials():
-        creds = None
-        
-        # 1. Try Environment Variable for Token
-        token_json = os.environ.get('GOOGLE_TOKEN_JSON')
-        if token_json:
+    def get_client_config():
+        # returns dict of client config from env or file
+        creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+        if creds_json:
             import json
-            try:
-                info = json.loads(token_json)
-                creds = Credentials.from_authorized_user_info(info, SCOPES)
-            except Exception as e:
-                print(f"Error loading token from env: {e}")
-
-        # 2. Fallback to File for Token
-        if not creds:
-            token_path = GoogleService._get_abs_path(TOKEN_FILE)
-            if os.path.exists(token_path):
-                creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+            return json.loads(creds_json)
         
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                try:
-                    creds.refresh(Request())
-                except Exception:
-                    return None
-            else:
-                # 3. Try Environment Variable for Client Credentials (client_secret)
-                creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
-                if creds_json:
-                    import json
-                    config = json.loads(creds_json)
-                    flow = InstalledAppFlow.from_client_config(config, SCOPES)
-                    creds = flow.run_local_server(port=0)
-                else:
-                    # 4. Fallback to File for Client Credentials
-                    creds_path = GoogleService._get_abs_path(CREDENTIALS_FILE)
-                    if not os.path.exists(creds_path):
-                        return None
-                    flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
-                    creds = flow.run_local_server(port=0)
-            
-            # Save updated token if using file (skip if using env var to avoid confusion, or print it)
-            # For simplicity, we only write back if file exists or we want to persist it locally.
-            # In a container with Env Vars, we can't easily update the Env Var, so we might lose refresh.
-            # Ideally, one should map a volume for persistence or just use the long-lived refresh token.
-            token_path = GoogleService._get_abs_path(TOKEN_FILE)
-            with open(token_path, 'w') as token:
-                token.write(creds.to_json())
-        
-        return creds
+        creds_path = GoogleService._get_abs_path(CREDENTIALS_FILE)
+        if os.path.exists(creds_path):
+            import json
+            with open(creds_path, 'r') as f:
+                return json.load(f)
+        return None
 
     @staticmethod
-    def get_user_email():
-        creds = GoogleService.get_credentials()
-        if not creds: return None
+    def get_credentials(session_creds=None):
+        if session_creds:
+            return Credentials.from_authorized_user_info(session_creds, SCOPES)
+        return None
+
+    @staticmethod
+    def get_user_email_from_creds(creds):
         try:
             service = build('oauth2', 'v2', credentials=creds)
             user_info = service.userinfo().get().execute()
@@ -93,14 +56,12 @@ class GoogleService:
             return None
 
     @staticmethod
-    def get_drive_service():
-        creds = GoogleService.get_credentials()
+    def get_drive_service(creds=None):
         if not creds: return None
         return build('drive', 'v3', credentials=creds)
 
     @staticmethod
-    def get_calendar_service():
-        creds = GoogleService.get_credentials()
+    def get_calendar_service(creds=None):
         if not creds: return None
         return build('calendar', 'v3', credentials=creds)
 

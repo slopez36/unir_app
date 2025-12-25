@@ -1,26 +1,23 @@
-from flask import Blueprint, request, redirect, url_for, flash
+from flask import Blueprint, request, redirect, url_for, flash, session
 from app import db
 from app.models import Resource, Subject
 from app.services.google_service import GoogleService
 import os
 from werkzeug.utils import secure_filename
+import tempfile
 
 resources_bp = Blueprint('resources', __name__, url_prefix='/resource')
 
 @resources_bp.route('/<int:subject_id>/upload', methods=['POST'])
 def upload(subject_id):
-    subject = Subject.query.get_or_404(subject_id)
-    files = request.files.getlist('files')
-    category = request.form.get('category')
-    title_prefix = request.form.get('title_prefix')
+    # ...
+    # ...
     
-    if not files or not category:
-        flash('Faltan datos.', 'error')
-        return redirect(url_for('subjects.detail', subject_id=subject.id))
-
-    drive_service = GoogleService.get_drive_service()
+    creds_dict = session.get('credentials')
+    cred_obj = GoogleService.get_credentials(creds_dict)
+    drive_service = GoogleService.get_drive_service(cred_obj)
     if not drive_service:
-        flash('Error de conexión con Google Drive.', 'error')
+        flash('Error de conexión con Google Drive (Token inválido).', 'error')
         return redirect(url_for('subjects.detail', subject_id=subject.id))
 
     # Get subject folder
@@ -36,7 +33,8 @@ def upload(subject_id):
         filename = secure_filename(file.filename)
         
         # Save temp to upload
-        temp_path = os.path.join('/tmp', filename) if os.name != 'nt' else os.path.join(os.environ.get('TEMP', 'C:\\Temp'), filename)
+        temp_dir = tempfile.gettempdir()
+        temp_path = os.path.join(temp_dir, filename)
         file.save(temp_path)
         
         try:
@@ -83,7 +81,9 @@ def delete(resource_id):
     subject_id = resource.subject_id
     
     if resource.type != 'enlaces':
-        drive_service = GoogleService.get_drive_service()
+        creds_dict = session.get('credentials')
+        cred_obj = GoogleService.get_credentials(creds_dict)
+        drive_service = GoogleService.get_drive_service(cred_obj)
         if drive_service:
             GoogleService.delete_file(drive_service, resource.path_or_url)
     
