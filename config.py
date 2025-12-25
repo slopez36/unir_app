@@ -8,7 +8,9 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Auth settings
-    ALLOWED_EMAILS = ["slopezgoikolea@gmail.com"]
+    # Auth settings
+    _emails_str = os.environ.get('ALLOWED_EMAILS', "slopezgoikolea@gmail.com")
+    ALLOWED_EMAILS = [e.strip() for e in _emails_str.split(',')]
 
 class DevelopmentConfig(Config):
     DEBUG = True
@@ -17,6 +19,6 @@ class ProductionConfig(Config):
     DEBUG = False
 
 config_by_name = {
-    'dev': DevelopmentConfig,
-    'prod': ProductionConfig
+    'development': DevelopmentConfig,
+    'production': ProductionConfig
 }

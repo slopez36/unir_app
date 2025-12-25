@@ -3,6 +3,11 @@ from app.services.google_service import GoogleService
 import google_auth_oauthlib.flow
 import os
 
+# Allow OAuth over HTTP for local testing
+# Allow OAuth over HTTP for local testing ONLY
+if os.environ.get('FLASK_ENV') in ['development', 'dev']:
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login')
@@ -57,11 +62,15 @@ def callback():
     
     # Verify Email
     email = GoogleService.get_user_email_from_creds(credentials)
-    if email not in current_app.config['ALLOWED_EMAILS']:
-        session.clear()
-        flash(f'Acceso denegado para {email}.', 'error')
-        return redirect(url_for('main.index'))
+    print(f"DEBUG: Email retrieved: {email}") # DEBUG
+    print(f"DEBUG: Allowed emails: {current_app.config['ALLOWED_EMAILS']}") # DEBUG
     
+    if email not in current_app.config['ALLOWED_EMAILS']:
+        print("DEBUG: Email not allowed or None") # DEBUG
+        session.clear()
+        return f"Acceso denegado para el email: {email} (No está en la lista de permitidos). <a href='/login'>Intentar con otra cuenta</a>"
+    
+    print(f"DEBUG: Login successful for {email}") # DEBUG
     session['user_email'] = email
     flash(f'Bienvenido, {email}', 'success')
     return redirect(url_for('main.index'))

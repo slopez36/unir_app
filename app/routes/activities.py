@@ -22,14 +22,14 @@ def create(subject_id):
         db.session.commit()
         flash('Actividad creada.', 'success')
         
-    return redirect(url_for('subjects.detail', subject_id=subject_id))
+    return redirect(url_for('subjects.detail', subject_id=subject_id, tab='activities'))
 
 @activities_bp.route('/<int:activity_id>/toggle', methods=['POST'])
 def toggle(activity_id):
     activity = Activity.query.get_or_404(activity_id)
     activity.is_completed = 1 if activity.is_completed == 0 else 0
     db.session.commit()
-    return redirect(url_for('subjects.detail', subject_id=activity.subject_id))
+    return redirect(url_for('subjects.detail', subject_id=activity.subject_id, tab='activities'))
 
 @activities_bp.route('/<int:activity_id>/delete', methods=['POST'])
 def delete(activity_id):
@@ -48,7 +48,7 @@ def delete(activity_id):
     db.session.delete(activity)
     db.session.commit()
     flash('Actividad eliminada.', 'success')
-    return redirect(url_for('subjects.detail', subject_id=subject_id))
+    return redirect(url_for('subjects.detail', subject_id=subject_id, tab='activities'))
 
 @activities_bp.route('/<int:activity_id>/upload', methods=['POST'])
 def upload_file(activity_id):
@@ -60,7 +60,7 @@ def upload_file(activity_id):
     drive_service = GoogleService.get_drive_service(cred_obj)
     if not drive_service:
         flash('No se pudo conectar a Drive.', 'error')
-        return redirect(url_for('subjects.detail', subject_id=activity.subject_id))
+        return redirect(url_for('subjects.detail', subject_id=activity.subject_id, tab='activities'))
     
     # Folder structure: Subject -> Actividades
     subject_folder_id = GoogleService.get_or_create_folder(drive_service, activity.subject.name)
@@ -84,7 +84,7 @@ def upload_file(activity_id):
                 
     db.session.commit()
     flash('Archivos adjuntados.', 'success')
-    return redirect(url_for('subjects.detail', subject_id=activity.subject_id))
+    return redirect(url_for('subjects.detail', subject_id=activity.subject_id, tab='activities'))
 
 # Events
 @activities_bp.route('/<int:subject_id>/event/create', methods=['POST'])
@@ -114,4 +114,4 @@ def create_event(subject_id):
         db.session.commit()
         flash('Evento creado.', 'success')
         
-    return redirect(url_for('subjects.detail', subject_id=subject_id))
+    return redirect(url_for('subjects.detail', subject_id=subject_id, tab='calendar'))

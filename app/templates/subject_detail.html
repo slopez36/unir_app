@@ -28,8 +28,7 @@
             </div>
         </div>
 
-        <form action="{{ url_for('subjects.delete', subject_id=subject.id) }}" method="POST"
-            onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta asignatura? Esta acción es irreversible.');">
+        <form action="{{ url_for('subjects.delete', subject_id=subject.id) }}" method="POST" class="confirm-delete">
             <button type="submit"
                 class="p-3 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                 title="Eliminar Asignatura">
@@ -42,19 +41,19 @@
 <!-- Custom Tab Navigation -->
 <div class="mb-8 overflow-x-auto pb-2">
     <nav class="flex space-x-2 bg-slate-200/50 p-1.5 rounded-xl inline-flex" id="tabsNav">
-        <button onclick="openTab(event, 'notes')"
+        <button id="btn-notes" onclick="openTab(event, 'notes')"
             class="tab-btn active px-6 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-slate-800 ring-1 ring-black/5">
             <i class="fas fa-sticky-note mr-2"></i> Notas
         </button>
-        <button onclick="openTab(event, 'resources')"
+        <button id="btn-resources" onclick="openTab(event, 'resources')"
             class="tab-btn px-6 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/50 transition-all">
             <i class="fas fa-folder-open mr-2"></i> Archivos
         </button>
-        <button onclick="openTab(event, 'activities')"
+        <button id="btn-activities" onclick="openTab(event, 'activities')"
             class="tab-btn px-6 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/50 transition-all">
             <i class="fas fa-check-circle mr-2"></i> Actividades
         </button>
-        <button onclick="openTab(event, 'calendar')"
+        <button id="btn-calendar" onclick="openTab(event, 'calendar')"
             class="tab-btn px-6 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/50 transition-all">
             <i class="fas fa-calendar-alt mr-2"></i> Calendario
         </button>
@@ -122,13 +121,15 @@
                     <form action="{{ url_for('resources.upload', subject_id=subject.id) }}" method="POST"
                         enctype="multipart/form-data" class="space-y-4">
                         <div class="relative group">
-                            <input type="file" name="files" multiple required
+                            <input type="file" name="files" multiple required id="fileInput"
+                                onchange="updateFileList(this)"
                                 class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                             <div
                                 class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center group-hover:border-brand-500 group-hover:bg-brand-50 transition-all">
                                 <i
                                     class="fas fa-cloud-upload-alt text-2xl text-slate-400 group-hover:text-brand-500 mb-2 block"></i>
                                 <span class="text-xs text-slate-500 font-medium">Click o arrastra archivos</span>
+                                <div id="fileList" class="mt-2 text-xs text-brand-600 font-bold hidden"></div>
                             </div>
                         </div>
 
@@ -187,7 +188,7 @@
                                 {% endif %}
                             </div>
                             <form action="{{ url_for('resources.delete', resource_id=res.id) }}" method="POST"
-                                onsubmit="return confirm('¿Borrar?');">
+                                class="confirm-delete">
                                 <button class="text-slate-300 hover:text-red-500 transition-colors"><i
                                         class="fas fa-times"></i></button>
                             </form>
@@ -239,12 +240,12 @@
                     <div class="md:col-span-6">
                         <label class="block text-xs font-bold text-slate-500 uppercase">Título</label>
                         <input type="text" name="title" required
-                            class="w-full mt-1 text-sm rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500">
+                            class="w-full mt-1 text-sm rounded-lg border border-slate-300 p-2.5 bg-slate-50 focus:border-brand-500 focus:ring-brand-500">
                     </div>
                     <div class="md:col-span-4">
                         <label class="block text-xs font-bold text-slate-500 uppercase">Fecha Límite</label>
                         <input type="date" name="due_date"
-                            class="w-full mt-1 text-sm rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500">
+                            class="w-full mt-1 text-sm rounded-lg border border-slate-300 p-2.5 bg-slate-50 focus:border-brand-500 focus:ring-brand-500">
                     </div>
                     <div class="md:col-span-2">
                         <button type="submit"
@@ -275,7 +276,7 @@
                             class="text-lg font-bold text-slate-800 {% if act.is_completed %}text-slate-400 line-through{% endif %}">
                             {{ act.title }}</h4>
                         <form action="{{ url_for('activities.delete', activity_id=act.id) }}" method="POST"
-                            onsubmit="return confirm('¿Borrar?');">
+                            class="confirm-delete">
                             <button class="text-slate-300 hover:text-red-500 transition-colors"><i
                                     class="fas fa-trash-alt"></i></button>
                         </form>
@@ -314,7 +315,9 @@
                             <label
                                 class="cursor-pointer text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1">
                                 <i class="fas fa-plus"></i> Añadir Archivo
-                                <input type="file" name="files" multiple onchange="this.form.submit()" class="hidden">
+                                <input type="file" name="files" multiple
+                                    onchange="alert('Archivos seleccionados: ' + Array.from(this.files).map(f => f.name).join(', ')) || this.form.submit()"
+                                    class="hidden">
                             </label>
                         </form>
                     </div>
@@ -339,18 +342,18 @@
                     <div>
                         <label class="text-xs font-bold text-slate-500 uppercase">Título</label>
                         <input type="text" name="title" required
-                            class="w-full mt-1 text-sm rounded-lg border-slate-300 focus:ring-brand-500 focus:border-brand-500">
+                            class="w-full mt-1 text-sm rounded-lg border border-slate-300 p-2.5 bg-slate-50 focus:ring-brand-500 focus:border-brand-500">
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-xs font-bold text-slate-500 uppercase">Inicio</label>
                             <input type="datetime-local" name="start" required
-                                class="w-full mt-1 text-xs rounded-lg border-slate-300">
+                                class="w-full mt-1 text-xs rounded-lg border border-slate-300 p-2.5 bg-slate-50">
                         </div>
                         <div>
                             <label class="text-xs font-bold text-slate-500 uppercase">Fin</label>
                             <input type="datetime-local" name="end" required
-                                class="w-full mt-1 text-xs rounded-lg border-slate-300">
+                                class="w-full mt-1 text-xs rounded-lg border border-slate-300 p-2.5 bg-slate-50">
                         </div>
                     </div>
                     <button type="submit"
@@ -409,5 +412,29 @@
 
     // Simple fade animation support
     document.head.insertAdjacentHTML("beforeend", `<style>.animate-fade-in-up { animation: fadeInUp 0.3s ease-out; } @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }</style>`)
+
+    function updateFileList(input) {
+        const fileList = document.getElementById('fileList');
+        if (input.files.length > 0) {
+            let names = Array.from(input.files).map(f => f.name).join(', ');
+            fileList.textContent = 'Seleccionados: ' + names;
+            fileList.classList.remove('hidden');
+        } else {
+            fileList.classList.add('hidden');
+        }
+    }
+
+    // Auto-open tab from URL
+    document.addEventListener("DOMContentLoaded", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        if (tab) {
+            const btn = document.getElementById('btn-' + tab);
+            if (btn) {
+                // Simulate click to activate tab and styles
+                btn.click();
+            }
+        }
+    });
 </script>
 {% endblock %}

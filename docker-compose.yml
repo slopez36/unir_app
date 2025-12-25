@@ -10,7 +10,6 @@ services:
     environment:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}
-      - GOOGLE_TOKEN_JSON=${GOOGLE_TOKEN_JSON}
       - GOOGLE_CREDENTIALS_JSON=${GOOGLE_CREDENTIALS_JSON}
     networks:
       - nginx-network

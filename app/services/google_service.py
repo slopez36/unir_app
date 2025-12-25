@@ -6,17 +6,17 @@ from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 import os
 import io
 
-SCOPES = [
-    'https://www.googleapis.com/auth/calendar',
-    'https://www.googleapis.com/auth/drive.file',
-    'https://www.googleapis.com/auth/userinfo.email',
-    'openid'
-]
-
-TOKEN_FILE = 'token.json'
-CREDENTIALS_FILE = 'credentials.json'
-
 class GoogleService:
+    SCOPES = [
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/drive.file',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'openid'
+    ]
+
+    TOKEN_FILE = 'token.json'
+    CREDENTIALS_FILE = 'credentials.json'
+
     @staticmethod
     def _get_abs_path(filename):
         if os.path.exists(filename): return filename
@@ -33,7 +33,7 @@ class GoogleService:
             import json
             return json.loads(creds_json)
         
-        creds_path = GoogleService._get_abs_path(CREDENTIALS_FILE)
+        creds_path = GoogleService._get_abs_path(GoogleService.CREDENTIALS_FILE)
         if os.path.exists(creds_path):
             import json
             with open(creds_path, 'r') as f:
@@ -43,7 +43,7 @@ class GoogleService:
     @staticmethod
     def get_credentials(session_creds=None):
         if session_creds:
-            return Credentials.from_authorized_user_info(session_creds, SCOPES)
+            return Credentials.from_authorized_user_info(session_creds, GoogleService.SCOPES)
         return None
 
     @staticmethod
