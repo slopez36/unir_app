@@ -137,3 +137,16 @@ class GoogleService:
             return event.get('id')
         except Exception:
             return None
+    @staticmethod
+    def move_file(service, file_id, new_parent_id):
+        # Retrieve the existing parents to remove
+        file = service.files().get(fileId=file_id, fields='parents').execute()
+        previous_parents = ",".join(file.get('parents'))
+        # Move the file to the new folder
+        file = service.files().update(
+            fileId=file_id,
+            addParents=new_parent_id,
+            removeParents=previous_parents,
+            fields='id, parents'
+        ).execute()
+        return file.get('id')

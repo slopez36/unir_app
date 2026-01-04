@@ -45,9 +45,21 @@
             class="tab-btn active px-6 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-slate-800 ring-1 ring-black/5">
             <i class="fas fa-sticky-note mr-2"></i> Notas
         </button>
+        <button id="btn-apuntes" onclick="openTab(event, 'apuntes')"
+            class="tab-btn px-6 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/50 transition-all">
+            <i class="fas fa-book-open mr-2"></i> Apuntes
+        </button>
+        <button id="btn-ejercicios" onclick="openTab(event, 'ejercicios')"
+            class="tab-btn px-6 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/50 transition-all">
+            <i class="fas fa-pencil-alt mr-2"></i> Ejercicios
+        </button>
+        <button id="btn-examenes" onclick="openTab(event, 'examenes')"
+            class="tab-btn px-6 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/50 transition-all">
+            <i class="fas fa-file-invoice mr-2"></i> Exámenes
+        </button>
         <button id="btn-resources" onclick="openTab(event, 'resources')"
             class="tab-btn px-6 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/50 transition-all">
-            <i class="fas fa-folder-open mr-2"></i> Archivos
+            <i class="fas fa-link mr-2"></i> Enlaces
         </button>
         <button id="btn-activities" onclick="openTab(event, 'activities')"
             class="tab-btn px-6 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/50 transition-all">
@@ -110,49 +122,53 @@
         </div>
     </div>
 
-    <!-- RESOURCES TAB -->
-    <div id="resources" class="tab-content hidden animate-fade-in-up">
+    <!-- MATERIAL TABS (Apuntes, Ejercicios, Exámenes, Enlaces) -->
+    {% for cat in ['apuntes', 'ejercicios', 'examenes', 'resources'] %}
+    <div id="{{ cat }}" class="tab-content hidden animate-fade-in-up">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <!-- Sidebar Actions -->
             <div class="space-y-6">
-                <!-- Upload Box -->
+                <!-- Upload Box (Hidden for 'resources' tab as it's for links) -->
+                {% if cat != 'resources' %}
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                    <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Subir Material</h3>
+                    <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Subir a {{ cat|capitalize
+                        }}</h3>
                     <form action="{{ url_for('resources.upload', subject_id=subject.id) }}" method="POST"
                         enctype="multipart/form-data" class="space-y-4">
+                        <input type="hidden" name="category" value="{{ cat }}">
                         <div class="relative group">
-                            <input type="file" name="files" multiple required id="fileInput"
-                                onchange="updateFileList(this)"
+                            <input type="file" name="files" multiple required id="fileInput-{{ cat }}"
+                                onchange="updateFileList(this, 'fileList-{{ cat }}')"
                                 class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                             <div
                                 class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center group-hover:border-brand-500 group-hover:bg-brand-50 transition-all">
                                 <i
                                     class="fas fa-cloud-upload-alt text-2xl text-slate-400 group-hover:text-brand-500 mb-2 block"></i>
                                 <span class="text-xs text-slate-500 font-medium">Click o arrastra archivos</span>
-                                <div id="fileList" class="mt-2 text-xs text-brand-600 font-bold hidden"></div>
+                                <div id="fileList-{{ cat }}" class="mt-2 text-xs text-brand-600 font-bold hidden"></div>
                             </div>
                         </div>
-
-                        <div>
-                            <select name="category"
-                                class="w-full text-sm rounded-lg border-slate-300 focus:ring-brand-500 focus:border-brand-500 bg-slate-50">
-                                <option value="apuntes">📖 Apuntes</option>
-                                <option value="ejercicios">✍️ Ejercicios</option>
-                                <option value="examenes">📝 Exámenes</option>
-                            </select>
-                        </div>
-
                         <input type="text" name="title_prefix" placeholder="Prefijo (Opcional)"
                             class="w-full text-sm rounded-lg border-slate-300 focus:ring-brand-500 focus:border-brand-500 bg-slate-50">
-
                         <button type="submit"
-                            class="w-full py-2 bg-brand-600 text-white text-sm font-bold rounded-lg shadow-md shadow-brand-500/20 hover:bg-brand-700 transition-all">
+                            class="w-full py-2 bg-brand-600 text-white text-sm font-bold rounded-lg shadow-md hover:bg-brand-700 transition-all">
                             Subir Archivos
                         </button>
                     </form>
                 </div>
 
-                <!-- Link Box -->
+                <!-- Merge Tool Info (Only if PDFs exist) -->
+                <div class="bg-brand-50 rounded-2xl p-6 border border-brand-100 hidden" id="merge-info-{{ cat }}">
+                    <h3 class="text-sm font-bold text-brand-900 uppercase tracking-wider mb-2">Unir PDFs</h3>
+                    <p class="text-xs text-brand-700 mb-4">Has seleccionado <span
+                            class="selected-count font-black">0</span> archivos.</p>
+                    <button onclick="openMergeModal('{{ cat }}')"
+                        class="w-full py-2 bg-brand-600 text-white text-sm font-bold rounded-lg shadow-md hover:bg-brand-700">
+                        Configurar Unión
+                    </button>
+                </div>
+                {% else %}
+                <!-- Link Box (Only for 'resources' tab) -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Guardar Enlace</h3>
                     <form action="{{ url_for('resources.add_link', subject_id=subject.id) }}" method="POST"
@@ -162,68 +178,110 @@
                         <input type="url" name="url" required placeholder="https://..."
                             class="w-full text-sm rounded-lg border-slate-300 focus:ring-brand-500 focus:border-brand-500 bg-slate-50">
                         <button type="submit"
-                            class="w-full py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg shadow-md shadow-emerald-500/20 hover:bg-emerald-700 transition-all">
+                            class="w-full py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg shadow-md hover:bg-emerald-700 transition-all">
                             Añadir URL
                         </button>
                     </form>
                 </div>
+                {% endif %}
             </div>
 
             <!-- Content Grid -->
             <div class="lg:col-span-3">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {% for res in resources %}
-                    <div
-                        class="group bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-40">
-                        <div class="flex items-start justify-between">
-                            <div class="p-2 rounded-lg 
+                <form id="merge-form-{{ cat }}" action="{{ url_for('resources.merge', subject_id=subject.id) }}"
+                    method="POST">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% set cat_resources = resources|selectattr('type', 'equalto', (cat if cat != 'resources' else
+                        'enlaces'))|list %}
+                        {% for res in cat_resources %}
+                        <div
+                            class="group bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between h-44 relative overflow-hidden">
+                            <!-- Selection Checkbox (Only for PDF files) -->
+                            {% if res.type != 'enlaces' %}
+                            <div class="absolute top-3 left-3 z-10">
+                                <input type="checkbox" name="resource_ids" value="{{ res.id }}"
+                                    onchange="toggleSelectionUI('{{ cat }}')"
+                                    class="w-5 h-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer">
+                            </div>
+                            {% endif %}
+
+                            <div class="flex items-start justify-end gap-2">
+                                <!-- Move Menu -->
+                                <div class="relative" x-data="{ open: false }">
+                                    <button type="button" @click="open = !open"
+                                        class="text-slate-300 hover:text-brand-500 transition-colors p-1">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    <div x-show="open" @click.away="open = false"
+                                        class="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 z-50 p-2 space-y-1">
+                                        <p class="text-[10px] font-bold text-slate-400 px-2 uppercase mb-1">Mover a...
+                                        </p>
+                                        {% for target_cat in ['apuntes', 'ejercicios', 'examenes'] %}
+                                        {% if target_cat != res.type %}
+                                        <form action="{{ url_for('resources.move', resource_id=res.id) }}"
+                                            method="POST">
+                                            <input type="hidden" name="category" value="{{ target_cat }}">
+                                            <button type="submit"
+                                                class="w-full text-left px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-brand-600 rounded-md transition-colors">
+                                                {{ target_cat|capitalize }}
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <form action="{{ url_for('resources.delete', resource_id=res.id) }}" method="POST"
+                                    class="confirm-delete">
+                                    <button class="text-slate-300 hover:text-red-500 transition-colors p-1"><i
+                                            class="fas fa-trash-alt"></i></button>
+                                </form>
+                            </div>
+
+                            <div class="mt-2 text-center">
+                                <div class="mx-auto w-12 h-12 rounded-xl flex items-center justify-center mb-2
                                 {% if res.type == 'apuntes' %}bg-blue-50 text-blue-600
                                 {% elif res.type == 'ejercicios' %}bg-orange-50 text-orange-600
                                 {% elif res.type == 'examenes' %}bg-red-50 text-red-600
                                 {% else %}bg-emerald-50 text-emerald-600{% endif %}">
+                                    {% if res.type == 'enlaces' %}
+                                    <i class="fas fa-link text-xl"></i>
+                                    {% else %}
+                                    <i class="fas fa-file-pdf text-xl"></i>
+                                    {% endif %}
+                                </div>
+                                <h4 class="font-bold text-slate-800 line-clamp-2 text-sm leading-tight px-2"
+                                    title="{{ res.title }}">
+                                    {{ res.title }}</h4>
+                            </div>
+
+                            <div class="pt-2 text-center border-t border-slate-50">
                                 {% if res.type == 'enlaces' %}
-                                <i class="fas fa-link text-lg"></i>
+                                <a href="{{ res.path_or_url }}" target="_blank"
+                                    class="text-xs font-black text-brand-600 hover:text-brand-800 inline-flex items-center gap-1 uppercase tracking-wider">
+                                    ABRIR <i class="fas fa-external-link-alt text-[10px]"></i>
+                                </a>
                                 {% else %}
-                                <i class="fas fa-file-alt text-lg"></i>
+                                <a href="https://drive.google.com/open?id={{ res.path_or_url }}" target="_blank"
+                                    class="text-xs font-black text-brand-600 hover:text-brand-800 inline-flex items-center gap-1 uppercase tracking-wider">
+                                    VER DRIVE <i class="fas fa-chevron-right text-[10px]"></i>
+                                </a>
                                 {% endif %}
                             </div>
-                            <form action="{{ url_for('resources.delete', resource_id=res.id) }}" method="POST"
-                                class="confirm-delete">
-                                <button class="text-slate-300 hover:text-red-500 transition-colors"><i
-                                        class="fas fa-times"></i></button>
-                            </form>
                         </div>
-
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ res.type
-                                }}</span>
-                            <h4 class="font-semibold text-slate-800 line-clamp-2 leading-tight" title="{{ res.title }}">
-                                {{ res.title }}</h4>
+                        {% else %}
+                        <div
+                            class="col-span-3 text-center py-20 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200">
+                            <i class="fas fa-folder-open text-4xl text-slate-200 mb-3 block"></i>
+                            <p class="text-slate-400 font-medium">No hay elementos en esta sección.</p>
                         </div>
-
-                        <div class="pt-2">
-                            {% if res.type == 'enlaces' %}
-                            <a href="{{ res.path_or_url }}" target="_blank"
-                                class="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1">
-                                ABRIR <i class="fas fa-external-link-alt"></i>
-                            </a>
-                            {% else %}
-                            <a href="https://drive.google.com/open?id={{ res.path_or_url }}" target="_blank"
-                                class="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1">
-                                VER ARCHIVO <i class="fas fa-arrow-right"></i>
-                            </a>
-                            {% endif %}
-                        </div>
+                        {% endfor %}
                     </div>
-                    {% else %}
-                    <div class="col-span-3 text-center py-12">
-                        <p class="text-slate-400">No hay archivos ni enlaces todavía.</p>
-                    </div>
-                    {% endfor %}
-                </div>
+                </form>
             </div>
         </div>
     </div>
+    {% endfor %}
 
     <!-- ACTIVITIES TAB -->
     <div id="activities" class="tab-content hidden animate-fade-in-up">
@@ -413,14 +471,78 @@
     // Simple fade animation support
     document.head.insertAdjacentHTML("beforeend", `<style>.animate-fade-in-up { animation: fadeInUp 0.3s ease-out; } @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }</style>`)
 
-    function updateFileList(input) {
-        const fileList = document.getElementById('fileList');
+    function updateFileList(input, listId) {
+        const fileList = document.getElementById(listId || 'fileList');
         if (input.files.length > 0) {
             let names = Array.from(input.files).map(f => f.name).join(', ');
             fileList.textContent = 'Seleccionados: ' + names;
             fileList.classList.remove('hidden');
         } else {
             fileList.classList.add('hidden');
+        }
+    }
+
+    function toggleSelectionUI(cat) {
+        const form = document.getElementById('merge-form-' + cat);
+        const mergeInfo = document.getElementById('merge-info-' + cat);
+        const checked = form.querySelectorAll('input[name="resource_ids"]:checked');
+        const count = checked.length;
+
+        if (count > 1) {
+            mergeInfo.classList.remove('hidden');
+            mergeInfo.querySelector('.selected-count').textContent = count;
+        } else {
+            mergeInfo.classList.add('hidden');
+        }
+    }
+
+    async function openMergeModal(cat) {
+        const { value: formValues } = await Swal.fire({
+            title: 'Unir PDFs',
+            html:
+                '<div class="text-left space-y-4">' +
+                '<div><label class="block text-xs font-bold text-slate-500 uppercase">Título del nuevo archivo</label>' +
+                '<input id="swal-title" class="swal2-input w-full m-0 mt-1" placeholder="Ej: Resumen Completo.pdf"></div>' +
+                '<div class="flex items-center gap-2 mt-4">' +
+                '<input type="checkbox" id="swal-keep" class="w-4 h-4 rounded border-slate-300">' +
+                '<label for="swal-keep" class="text-sm text-slate-600">Conservar archivos originales</label></div>' +
+                '</div>',
+            focusConfirm: false,
+            confirmButtonText: 'Unir Ahora',
+            showCancelButton: true,
+            preConfirm: () => {
+                return {
+                    title: document.getElementById('swal-title').value || 'Unido.pdf',
+                    keep: document.getElementById('swal-keep').checked
+                }
+            }
+        });
+
+        if (formValues) {
+            const mainForm = document.getElementById('merge-form-' + cat);
+
+            // Add extra fields to the form
+            const titleInput = document.createElement('input');
+            titleInput.type = 'hidden';
+            titleInput.name = 'title';
+            titleInput.value = formValues.title;
+            mainForm.appendChild(titleInput);
+
+            if (formValues.keep) {
+                const keepInput = document.createElement('input');
+                keepInput.type = 'hidden';
+                keepInput.name = 'keep_originals';
+                keepInput.value = 'on';
+                mainForm.appendChild(keepInput);
+            }
+
+            Swal.fire({
+                title: 'Uniendo...',
+                text: 'Procesando archivos en Google Drive',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            mainForm.submit();
         }
     }
 
